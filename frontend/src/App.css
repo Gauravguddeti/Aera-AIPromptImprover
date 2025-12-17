@@ -1,0 +1,105 @@
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    background: #2a2a2a;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #3a3a3a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.app-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.header-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.toggle input {
+    width: 40px;
+    height: 20px;
+    appearance: none;
+    background: #444;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.toggle input:checked {
+    background: #22c55e;
+}
+
+.toggle input::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s;
+}
+
+.toggle input:checked::before {
+    transform: translateX(20px);
+}
+
+.toggle span {
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+.debug-toggle {
+    padding: 0.5rem 1rem;
+    background: #3a3a3a;
+    border: 1px solid #4a4a4a;
+    border-radius: 4px;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.debug-toggle:hover {
+    background: #4a4a4a;
+}
+
+.app-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.editor-section {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.sidebar {
+    width: 400px;
+    background: #242424;
+    border-left: 1px solid #3a3a3a;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}

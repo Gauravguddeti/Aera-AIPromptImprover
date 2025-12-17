@@ -1,0 +1,82 @@
+.prompt-editor {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.editor-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #999;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #666;
+}
+
+.status-indicator.status-connected {
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+}
+
+.status-indicator.status-error {
+    background: #ef4444;
+    box-shadow: 0 0 8px #ef4444;
+}
+
+.editor-container {
+    position: relative;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    min-height: 400px;
+}
+
+.editor-textarea {
+    width: 100%;
+    min-height: 400px;
+    padding: 1.5rem;
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: vertical;
+    position: relative;
+    z-index: 1;
+    caret-color: #fff;
+}
+
+.editor-textarea::placeholder {
+    color: #666;
+}
+
+.editor-textarea:focus {
+    outline: none;
+}
+
+.editor-stats {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #999;
+}

@@ -1,0 +1,118 @@
+.suggestion-tooltip {
+    position: absolute;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    max-width: 350px;
+    min-width: 280px;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease-out;
+    pointer-events: auto;
+}
+
+.tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem;
+    border-bottom: 1px solid #3a3a3a;
+}
+
+.tooltip-title {
+    flex: 1;
+}
+
+.tooltip-title strong {
+    display: block;
+    color: #fff;
+    margin-bottom: 0.25rem;
+}
+
+.issue-type {
+    font-size: 0.75rem;
+    color: #999;
+    text-transform: capitalize;
+}
+
+.tooltip-close {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 1rem;
+}
+
+.tooltip-close:hover {
+    color: #fff;
+}
+
+.tooltip-content {
+    padding: 1rem;
+}
+
+.tooltip-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #b0b0b0;
+    margin-bottom: 0.75rem;
+}
+
+.suggestions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.suggestion-item {
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.suggestion-item:hover {
+    background: #3a3a3a;
+    border-color: #22c55e;
+    transform: translateX(2px);
+}
+
+.suggestion-text {
+    font-weight: 500;
+    color: #22c55e;
+    margin-bottom: 0.5rem;
+}
+
+.suggestion-rationale {
+    font-size: 0.875rem;
+    color: #b0b0b0;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.suggestion-meta {
+    font-size: 0.75rem;
+    color: #777;
+}
+
+.no-suggestions {
+    color: #999;
+    font-style: italic;
+}
+
+.tooltip-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #3a3a3a;
+    background: #252525;
+    border-radius: 0 0 8px 8px;
+}
+
+.tooltip-footer small {
+    color: #777;
+    font-size: 0.75rem;
+}

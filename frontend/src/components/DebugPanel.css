@@ -1,0 +1,85 @@
+.debug-panel {
+    background: #1e1e1e;
+    border-top: 1px solid #3a3a3a;
+}
+
+.debug-header {
+    padding: 1rem;
+    border-bottom: 1px solid #2a2a2a;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.debug-header:hover {
+    background: #252525;
+}
+
+.debug-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.debug-toggle {
+    color: #777;
+    font-size: 0.75rem;
+}
+
+.debug-content {
+    padding: 1rem;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.debug-empty {
+    color: #777;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
+}
+
+.debug-section {
+    margin-bottom: 1.5rem;
+}
+
+.debug-section h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #b0b0b0;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.debug-field {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.debug-label {
+    font-size: 0.875rem;
+    color: #999;
+}
+
+.debug-value {
+    font-size: 0.875rem;
+    color: #e0e0e0;
+    font-weight: 500;
+}
+
+.debug-json {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    padding: 1rem;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: #a0a0a0;
+    overflow-x: auto;
+    line-height: 1.4;
+}

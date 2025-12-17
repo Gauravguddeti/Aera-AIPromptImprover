@@ -1,0 +1,23 @@
+{
+  "name": "aera-desktop",
+  "version": "0.1.0",
+  "description": "Aera AI Prompt Enhancement Tool - Desktop Application",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:debug": "tauri build --debug"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.0"
+  },
+  "keywords": [
+    "ai",
+    "prompt",
+    "enhancement",
+    "desktop",
+    "tauri"
+  ],
+  "author": "Aera Development Team",
+  "license": "MIT"
+}

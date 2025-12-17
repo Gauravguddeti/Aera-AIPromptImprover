@@ -1,0 +1,30 @@
+[package]
+name = "aera-desktop"
+version = "0.1.0"
+description = "Aera AI Prompt Enhancement Tool - Desktop Application"
+authors = ["Aera Development Team"]
+license = "MIT"
+repository = "https://github.com/aera-ai/aera"
+edition = "2021"
+rust-version = "1.70"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "1.5", features = ["api-all"] }
+tokio = { version = "1.0", features = ["full"] }
+reqwest = { version = "0.11", features = ["json"] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

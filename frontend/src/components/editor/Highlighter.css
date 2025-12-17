@@ -1,0 +1,39 @@
+.highlighter-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 400px;
+    padding: 1.5rem;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: transparent;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.highlighter-overlay .highlight {
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    padding: 0 2px;
+    animation: fadeIn 0.4s ease-out;
+    pointer-events: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.highlighter-overlay .highlight:hover {
+    filter: brightness(1.2);
+}
