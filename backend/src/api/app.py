@@ -112,7 +112,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         # Already properly formatted
         return JSONResponse(
             status_code=exc.status_code,
-            content=exc.detail
+            content=jsonable_encoder(exc.detail)
         )
     
     # Convert simple string detail to proper error response
@@ -154,36 +154,63 @@ async def health_check() -> HealthResponse:
         dependencies = {}
         overall_status = HealthStatus.HEALTHY
         
-        # Check Ollama availability (if configured)
+        # Check Groq availability
         try:
-            from ..libs.suggestion_engine.providers import OllamaProvider
-            ollama_provider = OllamaProvider()
+            from ..libs.suggestion_engine import GroqProvider, OllamaProvider
+            from ..config import settings
+            groq_provider = GroqProvider(api_key=settings.GROQ_API_KEY, model=settings.GROQ_MODEL)
             
             start_time = time.time()
-            is_available = await ollama_provider.is_available()
+            is_available = await groq_provider.is_available()
             response_time = (time.time() - start_time) * 1000
             
             if is_available:
+                dependencies["groq"] = DependencyHealth(
+                    available=True,
+                    response_time_ms=response_time,
+                    version=settings.GROQ_MODEL,
+                    model=settings.GROQ_MODEL
+                )
+            else:
+                dependencies["groq"] = DependencyHealth(
+                    available=False,
+                    error="Groq API key missing"
+                )
+                overall_status = HealthStatus.DEGRADED
+                
+        except Exception as e:
+            dependencies["groq"] = DependencyHealth(
+                available=False,
+                error=f"Groq check failed: {str(e)}"
+            )
+            # Don't mark as unhealthy since we have rule-based fallback
+            overall_status = HealthStatus.DEGRADED
+
+        # Check local Ollama availability (optional fallback)
+        try:
+            from ..config import settings
+            ollama_provider = OllamaProvider(model=settings.OLLAMA_MODEL, host=settings.OLLAMA_HOST)
+            start_time = time.time()
+            ollama_available = await ollama_provider.is_available()
+            response_time = (time.time() - start_time) * 1000
+
+            if ollama_available:
                 dependencies["ollama"] = DependencyHealth(
                     available=True,
                     response_time_ms=response_time,
-                    version="mistral:8b",
-                    model="mistral:8b"
+                    version=settings.OLLAMA_MODEL,
+                    model=settings.OLLAMA_MODEL
                 )
             else:
                 dependencies["ollama"] = DependencyHealth(
                     available=False,
-                    error="Ollama service not available"
+                    error="Ollama not running or model unavailable"
                 )
-                overall_status = HealthStatus.DEGRADED
-                
         except Exception as e:
             dependencies["ollama"] = DependencyHealth(
                 available=False,
                 error=f"Ollama check failed: {str(e)}"
             )
-            # Don't mark as unhealthy since we have rule-based fallback
-            overall_status = HealthStatus.DEGRADED
         
         # Check database health (placeholder for future implementation)
         # For now, mark as healthy since we're using in-memory storage

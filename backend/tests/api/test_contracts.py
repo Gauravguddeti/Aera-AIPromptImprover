@@ -251,6 +251,34 @@ class TestSuggestionsAPI:
         
         assert response.status_code in [400, 404, 422]  # Bad request or not found
 
+    def test_submit_suggestion_feedback(self, client):
+        """Test submitting thumbs up/down feedback for a suggestion."""
+        analyze_response = client.post("/api/prompts/analyze", json={
+            "content": "Write something good",
+            "options": {"include_suggestions": True}
+        })
+        assert analyze_response.status_code == 200
+
+        phrase = analyze_response.json()["vague_phrases"][0]
+        suggestion = phrase.get("suggestions", [])[0]
+
+        payload = {
+            "suggestion_id": suggestion["id"],
+            "phrase_text": phrase["text"],
+            "improved_text": suggestion["improved_text"],
+            "rating": "up",
+            "context": "Write something good",
+            "provider_used": "contract-test"
+        }
+
+        response = client.post("/api/suggestions/feedback", json=payload)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["received"] is True
+        assert data["rating"] == "up"
+        assert "feedback_id" in data
+
 
 class TestPreferencesAPI:
     """Test user preferences API endpoints."""

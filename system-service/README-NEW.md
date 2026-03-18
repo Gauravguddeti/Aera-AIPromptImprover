@@ -138,6 +138,9 @@ dotnet build
 
 # Run in console mode for debugging
 dotnet run
+
+# Run integration tests only
+dotnet run -- --integration-test
 ```
 
 ### Debugging Tips

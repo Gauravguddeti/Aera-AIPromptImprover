@@ -16,7 +16,8 @@ from fastapi.routing import APIRouter
 
 from ..libs.prompt_analyzer.analyzer import PromptAnalyzer
 from ..libs.suggestion_engine.engine import SuggestionEngine, SuggestionRequest as LibSuggestionRequest
-from ..libs.suggestion_engine.providers import OllamaProvider, RuleBasedProvider
+from ..libs.suggestion_engine import GroqWithOllamaFallbackProvider, RuleBasedProvider
+from ..config import settings
 from ..models import (
     WebSocketAnalysisRequest,
     WebSocketAnalysisResponse,
@@ -39,7 +40,12 @@ ws_router = APIRouter()
 # Initialize libraries for WebSocket use
 ws_prompt_analyzer = PromptAnalyzer()
 ws_suggestion_engine = SuggestionEngine([
-    OllamaProvider(),       # AI-powered suggestions
+    GroqWithOllamaFallbackProvider(
+        api_key=settings.GROQ_API_KEY,
+        groq_model=settings.GROQ_MODEL,
+        ollama_model=settings.OLLAMA_MODEL,
+        ollama_host=settings.OLLAMA_HOST,
+    ),
     RuleBasedProvider()     # Fallback
 ])
 
@@ -144,6 +150,16 @@ class AnalysisDebouncer:
     async def _perform_analysis(self, client_id: str, content: str, options: Optional[dict] = None):
         """Perform the actual analysis and send results."""
         try:
+            if not content:
+                analysis_response = AnalysisResponse(
+                    content="",
+                    vague_phrases=[],
+                    analysis_time_ms=0.0
+                )
+                ws_response = WebSocketAnalysisResponse(data=analysis_response)
+                await manager.send_message(client_id, ws_response.model_dump())
+                return
+
             start_time = time.perf_counter()
             
             # Create analysis request

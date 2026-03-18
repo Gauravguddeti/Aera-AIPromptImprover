@@ -19,6 +19,9 @@ from .schemas import (
     AnalysisOptionsModel,
     SuggestionRequest,
     SuggestionResponse,
+    SuggestionFeedbackRating,
+    SuggestionFeedbackRequest,
+    SuggestionFeedbackResponse,
     
     # Preference models
     UserPreferences,
@@ -57,6 +60,9 @@ __all__ = [
     'AnalysisOptionsModel',
     'SuggestionRequest',
     'SuggestionResponse',
+    'SuggestionFeedbackRating',
+    'SuggestionFeedbackRequest',
+    'SuggestionFeedbackResponse',
     
     # Preference models
     'UserPreferences',

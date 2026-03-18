@@ -10,6 +10,19 @@ namespace AeraSystemService
     {
         static async Task Main(string[] args)
         {
+            if (args.Length > 0 && args[0] == "--integration-test")
+            {
+                using var loggerFactory = LoggerFactory.Create(builder =>
+                {
+                    builder.AddConsole();
+                    builder.SetMinimumLevel(LogLevel.Information);
+                });
+                var integrationLogger = loggerFactory.CreateLogger("IntegrationTestRunner");
+                int exitCode = await IntegrationTestRunner.RunAsync(integrationLogger);
+                Environment.Exit(exitCode);
+                return;
+            }
+
             Console.WriteLine("🚀 Aera Debug Mode - Testing Text Capture");
             Console.WriteLine("Backend should be running at: http://localhost:8000");
             Console.WriteLine("Press Ctrl+C to exit\n");

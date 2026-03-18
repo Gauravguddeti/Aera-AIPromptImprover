@@ -1,0 +1,45 @@
+.cursor-plan-panel {
+    position: absolute;
+    width: 320px;
+    max-width: calc(100vw - 2rem);
+    background: linear-gradient(165deg, #1f2937 0%, #111827 100%);
+    border: 1px solid #334155;
+    border-radius: 10px;
+    box-shadow: 0 16px 36px rgba(2, 6, 23, 0.45);
+    z-index: 950;
+    padding: 0.9rem;
+    color: #e2e8f0;
+}
+
+.cursor-plan-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.cursor-plan-close {
+    border: 1px solid #475569;
+    background: #0f172a;
+    color: #cbd5e1;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 22px;
+    height: 22px;
+    line-height: 1;
+}
+
+.cursor-plan-context {
+    margin: 0 0 0.65rem;
+    color: #93c5fd;
+    font-size: 0.83rem;
+}
+
+.cursor-plan-steps {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: grid;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    line-height: 1.35;
+}

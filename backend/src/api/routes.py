@@ -8,18 +8,22 @@ getting suggestions, and managing user preferences.
 import time
 from typing import Dict, List, Optional
 from uuid import UUID
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query, Path
 from fastapi.responses import JSONResponse
 
 from ..libs.prompt_analyzer.analyzer import PromptAnalyzer
-from ..libs.suggestion_engine.engine import SuggestionEngine, SuggestionRequest as LibSuggestionRequest
-from ..libs.suggestion_engine.providers import OllamaProvider, RuleBasedProvider
+from ..libs.suggestion_engine.engine import SuggestionEngine, SuggestionRequest as LibSuggestionRequest, AIProvider
+from ..libs.suggestion_engine import GroqWithOllamaFallbackProvider, RuleBasedProvider
+from ..config import settings
 from ..models import (
     AnalysisRequest,
     AnalysisResponse,
     SuggestionRequest,
     SuggestionResponse,
+    SuggestionFeedbackRequest,
+    SuggestionFeedbackResponse,
     UserPreferences,
     ModelConverter,
     ErrorResponse,
@@ -32,22 +36,26 @@ router = APIRouter(prefix="/api", tags=["analysis"])
 prompt_analyzer = PromptAnalyzer()
 
 # Initialize suggestion engine with providers
-from ..libs.suggestion_engine.engine import AIProvider
-from ..libs.suggestion_engine.providers import ModelDiscovery
 
-# Try Ollama first, fallback to rule-based
+# Try Groq first, fallback to rule-based
 providers: List[AIProvider] = [
-    OllamaProvider(),       # AI-powered suggestions
-    RuleBasedProvider()     # Fallback if Ollama unavailable
+    GroqWithOllamaFallbackProvider(
+        api_key=settings.GROQ_API_KEY,
+        groq_model=settings.GROQ_MODEL,
+        ollama_model=settings.OLLAMA_MODEL,
+        ollama_host=settings.OLLAMA_HOST,
+    ),
+    RuleBasedProvider()     # Fallback if Groq unavailable
 ]
 suggestion_engine = SuggestionEngine(providers)
 
-# Model discovery for recommendations
-model_discovery = ModelDiscovery()
+# Model discovery (Mocked/Static for Groq)
+# model_discovery = ModelDiscovery()
 
 # In-memory storage for phrases from recent analyses (for suggestions endpoint)
 # In production, this would be a proper database or cache
 recent_phrases: Dict[str, tuple] = {}  # phrase_id -> (phrase, context)
+suggestion_feedback: List[dict] = []
 
 
 @router.post("/prompts/analyze", response_model=AnalysisResponse)
@@ -60,6 +68,13 @@ async def analyze_prompt(request: AnalysisRequest) -> AnalysisResponse:
     """
     try:
         start_time = time.perf_counter()
+
+        if not request.content:
+            return AnalysisResponse(
+                content="",
+                vague_phrases=[],
+                analysis_time_ms=0.0,
+            )
         
         # Extract options with defaults
         options = request.options
@@ -242,6 +257,50 @@ async def get_suggestions_for_phrase(
         )
 
 
+@router.post("/suggestions/feedback", response_model=SuggestionFeedbackResponse)
+async def submit_suggestion_feedback(feedback: SuggestionFeedbackRequest) -> SuggestionFeedbackResponse:
+    """Record user feedback for a suggestion (thumbs up/down)."""
+    try:
+        feedback_id = uuid4()
+        suggestion_feedback.append(
+            {
+                "feedback_id": str(feedback_id),
+                "suggestion_id": str(feedback.suggestion_id),
+                "phrase_text": feedback.phrase_text,
+                "improved_text": feedback.improved_text,
+                "rating": feedback.rating.value,
+                "context": feedback.context,
+                "provider_used": feedback.provider_used,
+                "created_at": time.time(),
+            }
+        )
+
+        # Keep in-memory storage bounded.
+        if len(suggestion_feedback) > 1000:
+            suggestion_feedback.pop(0)
+
+        return SuggestionFeedbackResponse(
+            feedback_id=feedback_id,
+            received=True,
+            rating=feedback.rating,
+            message="Feedback recorded",
+        )
+    except Exception as e:
+        error_detail = ErrorDetail(
+            type="feedback_error",
+            message=f"Failed to store feedback: {str(e)}",
+            code="FEEDBACK_STORE_FAILED"
+        )
+        error_response = ErrorResponse(
+            detail="Failed to store suggestion feedback",
+            errors=[error_detail]
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=error_response.model_dump()
+        )
+
+
 @router.get("/preferences", response_model=UserPreferences)
 async def get_preferences() -> UserPreferences:
     """
@@ -307,15 +366,34 @@ async def update_preferences(preferences: UserPreferences) -> UserPreferences:
 @router.get("/models/discover")
 async def discover_models():
     """
-    Discover locally available Ollama models and provide recommendations.
+    Discover locally available models and provide recommendations.
     
-    Returns information about what models are installed, their suitability
-    for different tasks (analysis, rewriting, inline checks), and warnings
-    about performance or capability issues.
+    Updated to support Groq API.
     """
     try:
-        recommendations = await model_discovery.get_recommendations()
-        return JSONResponse(content=recommendations)
+        # Static response for Groq
+        groq_model = settings.GROQ_MODEL
+        
+        return JSONResponse(content={
+            'available_models': [{
+                'name': groq_model,
+                'size': 'N/A', 
+                'size_gb': 0,
+                'modified': 'Remote'
+            }],
+            'recommendations': [{
+                'model_name': groq_model,
+                'suitable_for': ['analysis', 'rewriting', 'inline_checks'],
+                'warnings': [],
+                'score': 1.0
+            }],
+            'status': 'ok',
+            'best_models': {
+                'analysis': groq_model,
+                'rewriting': groq_model,
+                'inline_checks': groq_model
+            }
+        })
     except Exception as e:
         error_detail = ErrorDetail(
             type="model_discovery_error",

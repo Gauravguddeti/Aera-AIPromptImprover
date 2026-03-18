@@ -1,7 +1,7 @@
 import React from 'react';
 import './SuggestionTooltip.css';
 
-function SuggestionTooltip({ issue, position, onApply, onClose }) {
+function SuggestionTooltip({ issue, position, onApply, onClose, onFeedback }) {
     console.log('=== TOOLTIP RENDERING ===');
     console.log('Issue:', issue);
     console.log('Position:', position);
@@ -45,6 +45,30 @@ function SuggestionTooltip({ issue, position, onApply, onClose }) {
                                     <div className="suggestion-meta">
                                         {suggestion.type} · {Math.round(suggestion.confidence * 100)}% confidence
                                     </div>
+                                    <div className="suggestion-actions">
+                                        <button
+                                            type="button"
+                                            className="feedback-button"
+                                            aria-label="Helpful suggestion"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onFeedback?.(suggestion, 'up');
+                                            }}
+                                        >
+                                            👍
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="feedback-button"
+                                            aria-label="Not helpful suggestion"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onFeedback?.(suggestion, 'down');
+                                            }}
+                                        >
+                                            👎
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -55,7 +79,7 @@ function SuggestionTooltip({ issue, position, onApply, onClose }) {
             </div>
 
             <div className="tooltip-footer">
-                <small>Click a suggestion to apply it</small>
+                <small>Click to apply. Use 👍/👎 to rate quality.</small>
             </div>
         </div>
     );

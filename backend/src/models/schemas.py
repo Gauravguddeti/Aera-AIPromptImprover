@@ -226,6 +226,56 @@ class SuggestionResponse(BaseModel):
     fallback_mode: bool = Field(default=False, description="Whether fallback suggestions were used")
 
 
+class SuggestionFeedbackRating(str, Enum):
+    """Allowed values for suggestion feedback."""
+    UP = "up"
+    DOWN = "down"
+
+
+class SuggestionFeedbackRequest(BaseModel):
+    """Request model for recording suggestion feedback."""
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "suggestion_id": "123e4567-e89b-12d3-a456-426614174001",
+                "phrase_text": "something",
+                "improved_text": "a specific example",
+                "rating": "up",
+                "context": "Write something good about AI",
+                "provider_used": "groq-llama3-70b-8192"
+            }
+        }
+    )
+
+    suggestion_id: UUID = Field(description="ID of the suggestion being rated")
+    phrase_text: str = Field(min_length=1, description="Original vague phrase text")
+    improved_text: str = Field(min_length=1, description="Suggested replacement text")
+    rating: SuggestionFeedbackRating = Field(description="User rating for the suggestion")
+    context: Optional[str] = Field(default=None, description="Prompt context when feedback was submitted")
+    provider_used: Optional[str] = Field(default=None, description="Provider that generated the suggestion")
+
+
+class SuggestionFeedbackResponse(BaseModel):
+    """Response model for suggestion feedback submission."""
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "feedback_id": "123e4567-e89b-12d3-a456-426614174099",
+                "received": True,
+                "rating": "up",
+                "message": "Feedback recorded",
+                "timestamp": "2025-09-16T10:30:00Z"
+            }
+        }
+    )
+
+    feedback_id: UUID = Field(description="Unique feedback ID")
+    received: bool = Field(default=True, description="Whether feedback was successfully recorded")
+    rating: SuggestionFeedbackRating = Field(description="Stored feedback rating")
+    message: str = Field(description="Feedback status message")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="When feedback was recorded")
+
+
 class AnalysisPreferences(BaseModel):
     """User preferences for analysis behavior."""
     model_config = ConfigDict(

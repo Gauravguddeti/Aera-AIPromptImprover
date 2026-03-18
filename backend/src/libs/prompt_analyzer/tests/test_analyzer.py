@@ -265,6 +265,26 @@ class TestPromptAnalyzer:
         assert result.fallback_mode is True
         assert len(result.vague_phrases) == 0
 
+    def test_nlp_detection_for_missing_context_pronoun(self):
+        """NLP detector should identify vague context pronouns in short prompts."""
+        text = "Improve it"
+        result = self.analyzer.analyze(text)
+
+        assert any(
+            p.original_text.lower() == "it" and p.vague_type == VagueType.MISSING_CONTEXT
+            for p in result.vague_phrases
+        )
+
+    def test_nlp_fallback_without_model(self):
+        """Analyzer should still work when NLP model is unavailable."""
+        self.analyzer._nlp_available = False
+        self.analyzer._nlp = None
+
+        result = self.analyzer.analyze("Write something good")
+
+        assert result.error is None
+        assert any(p.original_text.lower() == "something" for p in result.vague_phrases)
+
 
 class TestVagueTypeCoverage:
     """Test that all vague types are covered by patterns."""

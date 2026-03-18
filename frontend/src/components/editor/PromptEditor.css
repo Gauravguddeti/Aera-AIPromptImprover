@@ -24,6 +24,22 @@
     color: #999;
 }
 
+.planning-toggle {
+    margin-left: 0.75rem;
+    border: 1px solid #4b5563;
+    background: #1f2937;
+    color: #cbd5e1;
+    border-radius: 5px;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.planning-toggle:hover {
+    border-color: #0ea5e9;
+    color: #f8fafc;
+}
+
 .status-indicator {
     width: 8px;
     height: 8px;

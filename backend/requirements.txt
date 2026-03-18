@@ -1,29 +1,31 @@
 # Aera AI Prompt Enhancement Tool - Backend Dependencies
 
 # Core Framework
-fastapi==0.103.2
-uvicorn[standard]==0.23.2
-python-multipart==0.0.6
+fastapi>=0.109.0
+uvicorn[standard]>=0.23.2
+python-multipart>=0.0.6
 
 # AI and ML
-ollama==0.1.7
-pydantic==2.4.2
+ollama>=0.1.7
+pydantic>=2.4.2
+groq>=0.4.0
+spacy>=3.7.0
 
 # WebSocket support
-websockets==11.0.3
+websockets>=11.0.3
 
 # HTTP Client for external APIs (if needed)
-httpx>=0.25.2,<0.26.0
+httpx>=0.25.2
 
 # Data validation and serialization
-pydantic-settings==2.0.3
+pydantic-settings>=2.0.3
 
 # CORS middleware
-fastapi-cors==0.0.6
+fastapi-cors>=0.0.6
 
 # Testing
-pytest==7.4.2
-pytest-asyncio==0.21.1
+pytest>=7.4.2
+pytest-asyncio>=0.21.1
 pytest-mock==3.11.1
 # httpx is already defined above for ollama compatibility
 

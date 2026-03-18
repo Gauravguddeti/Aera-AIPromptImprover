@@ -3,9 +3,11 @@ import debounce from 'debounce';
 import { v4 as uuidv4 } from 'uuid';
 import Highlighter from './Highlighter';
 import SuggestionTooltip from '../tooltip/SuggestionTooltip';
+import CursorPlanPanel from '../planner/CursorPlanPanel';
 import './PromptEditor.css';
 
 const WEBSOCKET_URL = 'ws://localhost:8000/ws/analysis';
+const API_BASE_URL = 'http://localhost:8000';
 const DEBOUNCE_MS = 300;
 
 function PromptEditor({ enabled, onDebugData }) {
@@ -17,6 +19,8 @@ function PromptEditor({ enabled, onDebugData }) {
     const [connectionStatus, setConnectionStatus] = useState('disconnected');
     const [history, setHistory] = useState([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
+    const [showPlanningPanel, setShowPlanningPanel] = useState(true);
+    const [planPanelPosition, setPlanPanelPosition] = useState(null);
     
     const wsRef = useRef(null);
     const textareaRef = useRef(null);
@@ -63,23 +67,17 @@ function PromptEditor({ enabled, onDebugData }) {
         wsRef.current = ws;
 
         ws.onopen = () => {
-            console.log('WebSocket connected');
             setConnectionStatus('connected');
         };
 
         ws.onmessage = (event) => {
             try {
                 const response = JSON.parse(event.data);
-                console.log('Received:', response);
-                
                 if (response.type === 'analysis_response' && response.data) {
-                    const { vague_phrases, analysis_time_ms } = response.data;
-                    
-                    console.log('Raw vague_phrases:', vague_phrases);
+                    const { vague_phrases } = response.data;
                     
                     // Convert vague phrases to issues format
                     const convertedIssues = vague_phrases.map(phrase => {
-                        console.log('Processing phrase:', phrase.text, 'Suggestions:', phrase.suggestions);
                         return {
                             start: phrase.start_position,
                             end: phrase.end_position,
@@ -90,7 +88,6 @@ function PromptEditor({ enabled, onDebugData }) {
                         };
                     });
                     
-                    console.log('Converted issues:', convertedIssues);
                     setIssues(convertedIssues);
                     setAnalysisData(response.data);
                     onDebugData?.(response.data);
@@ -106,7 +103,6 @@ function PromptEditor({ enabled, onDebugData }) {
         };
 
         ws.onclose = () => {
-            console.log('WebSocket disconnected');
             setConnectionStatus('disconnected');
         };
 
@@ -163,6 +159,7 @@ function PromptEditor({ enabled, onDebugData }) {
     const handleTextareaFocus = () => {
         setHoveredIssue(null);
         setTooltipPosition(null);
+        setPlanPanelPosition(null);
     };
 
     // Detect hover over issues by cursor position in textarea
@@ -201,7 +198,6 @@ function PromptEditor({ enabled, onDebugData }) {
 
     // Handle hover on highlighted text (like Grammarly)
     const handleHighlightHover = (issue, rect) => {
-        console.log('Hovering issue:', issue);
         setHoveredIssue(issue);
         
         // Calculate position - show to the RIGHT of the word
@@ -234,6 +230,18 @@ function PromptEditor({ enabled, onDebugData }) {
         }
         
         setTooltipPosition({ top, left });
+
+        // Keep planning panel adjacent to cursor and avoid viewport overflow.
+        let planLeft = left + tooltipWidth + 12;
+        let planTop = top;
+        if (planLeft + 320 > window.innerWidth + scrollX) {
+            planLeft = left - 332;
+        }
+        if (planLeft < scrollX + 8) {
+            planLeft = scrollX + 8;
+            planTop = top + 210;
+        }
+        setPlanPanelPosition({ top: planTop, left: planLeft });
     };
 
     const handleHighlightLeave = () => {
@@ -241,6 +249,7 @@ function PromptEditor({ enabled, onDebugData }) {
         setTimeout(() => {
             setHoveredIssue(null);
             setTooltipPosition(null);
+            setPlanPanelPosition(null);
         }, 100);
     };
 
@@ -257,6 +266,7 @@ function PromptEditor({ enabled, onDebugData }) {
         setText(newText);
         setHoveredIssue(null);
         setTooltipPosition(null);
+        setPlanPanelPosition(null);
         
         // Update issue positions after replacement
         const lengthDiff = suggestion.improved_text.length - (issue.end - issue.start);
@@ -273,6 +283,31 @@ function PromptEditor({ enabled, onDebugData }) {
         }
     };
 
+    const handleSuggestionFeedback = async (issue, suggestion, rating) => {
+        if (!suggestion?.id) {
+            return;
+        }
+
+        try {
+            await fetch(`${API_BASE_URL}/api/suggestions/feedback`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    suggestion_id: suggestion.id,
+                    phrase_text: issue.text,
+                    improved_text: suggestion.improved_text,
+                    rating,
+                    context: text,
+                    provider_used: analysisData?.provider_used || null
+                })
+            });
+        } catch (error) {
+            console.error('Failed to submit suggestion feedback:', error);
+        }
+    };
+
     return (
         <div className="prompt-editor">
             <div className="editor-header">
@@ -280,6 +315,13 @@ function PromptEditor({ enabled, onDebugData }) {
                 <div className="connection-status">
                     <span className={`status-indicator status-${connectionStatus}`}></span>
                     <span>{connectionStatus}</span>
+                    <button
+                        type="button"
+                        className="planning-toggle"
+                        onClick={() => setShowPlanningPanel(prev => !prev)}
+                    >
+                        {showPlanningPanel ? 'Hide Plan' : 'Show Plan'}
+                    </button>
                 </div>
             </div>
 
@@ -309,7 +351,19 @@ function PromptEditor({ enabled, onDebugData }) {
                     issue={hoveredIssue}
                     position={tooltipPosition}
                     onApply={(suggestion) => applySuggestion(hoveredIssue, suggestion)}
-                    onClose={() => setHoveredIssue(null)}
+                    onFeedback={(suggestion, rating) => handleSuggestionFeedback(hoveredIssue, suggestion, rating)}
+                    onClose={() => {
+                        setHoveredIssue(null);
+                        setPlanPanelPosition(null);
+                    }}
+                />
+            )}
+
+            {showPlanningPanel && hoveredIssue && planPanelPosition && (
+                <CursorPlanPanel
+                    issue={hoveredIssue}
+                    position={planPanelPosition}
+                    onClose={() => setPlanPanelPosition(null)}
                 />
             )}
 

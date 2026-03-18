@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testMatch: [
@@ -12,15 +12,17 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@components/(.*)$': '<rootDir>/src/components/$1',
     '^@services/(.*)$': '<rootDir>/src/services/$1',
     '^@libs/(.*)$': '<rootDir>/src/libs/$1',
-    '^@pages/(.*)$': '<rootDir>/src/pages/$1'
+    '^@pages/(.*)$': '<rootDir>/src/pages/$1',
+    '\\.(css|less|scss|sass)$': '<rootDir>/tests/styleMock.js'
   },
-  transform: {},
-  extensionsToTreatAsEsm: ['.js'],
+  transform: {
+    '^.+\\.jsx?$': 'babel-jest',
+  },
   globals: {
     'jest': true
   }

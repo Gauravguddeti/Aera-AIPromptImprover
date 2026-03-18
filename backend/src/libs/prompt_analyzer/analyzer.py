@@ -120,6 +120,21 @@ class AnalysisResult:
 
 class PromptAnalyzer:
     """Main analyzer class for detecting vague phrases in prompts."""
+
+    # Lightweight local NLP vocab for semantic detection.
+    NLP_GENERIC_LEMMAS = {
+        "thing", "stuff", "something", "anything", "everything", "nothing", "item", "matter"
+    }
+    NLP_SUBJECTIVE_LEMMAS = {
+        "good", "bad", "nice", "great", "awesome", "terrible", "better", "best", "worse", "worst"
+    }
+    NLP_IMPRECISE_LEMMAS = {
+        "some", "many", "few", "several", "various", "multiple", "lot", "plenty"
+    }
+    NLP_WEAK_LEMMAS = {
+        "try", "attempt", "maybe", "perhaps", "possibly", "should"
+    }
+    NLP_CONTEXT_PRONOUNS = {"it", "this", "that", "these", "those"}
     
     # Pattern definitions for vague phrase detection
     VAGUE_PATTERNS = {
@@ -158,7 +173,7 @@ class PromptAnalyzer:
         VagueType.MISSING_EXAMPLES: [
             # Detect task requests without examples that would benefit from few-shot
             r'\b(classify|categorize|label|tag|identify|extract|parse|format|convert)\b(?!.*example)',
-            r'\b(write|generate|create)\s+(a|an|the)\s+\w+(?!.*example|.*like|.*such as)',
+            r'\b(write|generate|create)\s+(a|an|the)\s+(summary|description|message|email|post|story|response|output|content)\b(?!.*example|.*like|.*such as)',
             r'\b(analyze|evaluate|assess|judge|rate|score)\b(?!.*example|.*for instance)',
         ],
         VagueType.MISSING_REASONING: [
@@ -169,7 +184,7 @@ class PromptAnalyzer:
         ],
         VagueType.MISSING_STRUCTURE: [
             # Detect tasks that could use ReAct or ToT patterns
-            r'\b(plan|strategy|approach|method)\b(?!.*1\.|.*first|.*step)',
+            r'\b(plan|strategy|method)\b(?!.*1\.|.*first|.*step)',
             r'\b(debug|troubleshoot|fix|resolve)\b(?!.*check|.*verify|.*step)',
             r'\b(multiple (solutions|approaches|ways|options|alternatives))\b',
         ],
@@ -182,7 +197,29 @@ class PromptAnalyzer:
     
     def __init__(self):
         """Initialize the analyzer."""
+        self._nlp = None
+        self._nlp_available = False
+        self._initialize_nlp_model()
         self._compile_patterns()
+
+    def _initialize_nlp_model(self) -> None:
+        """Initialize a small local spaCy model for lightweight semantic detection."""
+        try:
+            import spacy
+
+            try:
+                # Small non-transformer model suitable for local low-latency analysis.
+                self._nlp = spacy.load("en_core_web_sm", disable=["ner", "textcat"])
+            except Exception:
+                # Keep analysis working even if model package is missing.
+                self._nlp = spacy.blank("en")
+                if "sentencizer" not in self._nlp.pipe_names:
+                    self._nlp.add_pipe("sentencizer")
+
+            self._nlp_available = True
+        except Exception:
+            self._nlp = None
+            self._nlp_available = False
     
     def _compile_patterns(self):
         """Compile regex patterns for efficiency."""
@@ -225,7 +262,26 @@ class PromptAnalyzer:
             )
     
     def _detect_vague_phrases(self, text: str) -> List[VaguePhrase]:
-        """Detect vague phrases using pattern matching."""
+        """Detect vague phrases using local NLP first, then regex fallback."""
+        if not text:
+            return []
+
+        vague_phrases = []
+
+        # Local NLP pass helps reduce false positives from pure regex matching.
+        vague_phrases.extend(self._detect_vague_phrases_nlp(text))
+
+        # Regex pass remains as a robust fallback for coverage.
+        vague_phrases.extend(self._detect_vague_phrases_regex(text))
+
+        # Sort by position in text
+        vague_phrases.sort(key=lambda p: p.start_position)
+
+        # Remove overlapping matches (keep highest confidence)
+        return self._remove_overlaps(vague_phrases)
+
+    def _detect_vague_phrases_regex(self, text: str) -> List[VaguePhrase]:
+        """Detect vague phrases using regex patterns."""
         vague_phrases = []
         
         for vague_type, patterns in self._compiled_patterns.items():
@@ -240,11 +296,95 @@ class PromptAnalyzer:
                     )
                     vague_phrases.append(phrase)
         
-        # Sort by position in text
-        vague_phrases.sort(key=lambda p: p.start_position)
-        
-        # Remove overlapping matches (keep highest confidence)
-        return self._remove_overlaps(vague_phrases)
+        return vague_phrases
+
+    def _detect_vague_phrases_nlp(self, text: str) -> List[VaguePhrase]:
+        """Detect vague phrases using a lightweight local NLP model."""
+        if not self._nlp_available or self._nlp is None:
+            return []
+
+        vague_phrases: List[VaguePhrase] = []
+
+        try:
+            doc = self._nlp(text)
+
+            for i, token in enumerate(doc):
+                token_text = token.text.strip()
+                if not token_text:
+                    continue
+
+                token_lower = token_text.lower()
+                lemma = (token.lemma_ or token_lower).lower()
+
+                if lemma in self.NLP_GENERIC_LEMMAS:
+                    vague_phrases.append(
+                        VaguePhrase.create(
+                            start=token.idx,
+                            end=token.idx + len(token.text),
+                            text=token.text,
+                            vague_type=VagueType.GENERIC_TERM,
+                            confidence=0.92,
+                        )
+                    )
+                    continue
+
+                if lemma in self.NLP_SUBJECTIVE_LEMMAS and token.pos_ in {"ADJ", "ADV", ""}:
+                    vague_phrases.append(
+                        VaguePhrase.create(
+                            start=token.idx,
+                            end=token.idx + len(token.text),
+                            text=token.text,
+                            vague_type=VagueType.SUBJECTIVE_QUALIFIER,
+                            confidence=0.84,
+                        )
+                    )
+                    continue
+
+                if lemma in self.NLP_IMPRECISE_LEMMAS:
+                    vague_phrases.append(
+                        VaguePhrase.create(
+                            start=token.idx,
+                            end=token.idx + len(token.text),
+                            text=token.text,
+                            vague_type=VagueType.IMPRECISE_QUANTITY,
+                            confidence=0.86,
+                        )
+                    )
+                    continue
+
+                if lemma in self.NLP_WEAK_LEMMAS:
+                    vague_phrases.append(
+                        VaguePhrase.create(
+                            start=token.idx,
+                            end=token.idx + len(token.text),
+                            text=token.text,
+                            vague_type=VagueType.WEAK_INSTRUCTION,
+                            confidence=0.74,
+                        )
+                    )
+                    continue
+
+                # Context pronouns are vague when no nearby concrete noun appears before them.
+                if token_lower in self.NLP_CONTEXT_PRONOUNS:
+                    previous_window = [
+                        t for t in doc[max(0, i - 6):i]
+                        if t.pos_ in {"NOUN", "PROPN"}
+                    ]
+                    if not previous_window:
+                        vague_phrases.append(
+                            VaguePhrase.create(
+                                start=token.idx,
+                                end=token.idx + len(token.text),
+                                text=token.text,
+                                vague_type=VagueType.MISSING_CONTEXT,
+                                confidence=0.72,
+                            )
+                        )
+
+        except Exception:
+            return []
+
+        return vague_phrases
     
     def _calculate_confidence(self, text: str, vague_type: VagueType) -> float:
         """Calculate confidence score for a detected phrase."""
@@ -264,7 +404,12 @@ class PromptAnalyzer:
             return phrases
         
         non_overlapping = []
-        phrases_sorted = sorted(phrases, key=lambda p: (p.start_position, -p.confidence_score))
+        # Prefer confident, more specific spans first to avoid broad low-confidence matches
+        # hiding useful token-level detections.
+        phrases_sorted = sorted(
+            phrases,
+            key=lambda p: (-p.confidence_score, (p.end_position - p.start_position), p.start_position)
+        )
         
         for phrase in phrases_sorted:
             # Check if this phrase overlaps with any accepted phrase
